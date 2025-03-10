@@ -1,10 +1,17 @@
 package main
 
+/*
+Todo:
+  clean up the code and move some thing to a new package
+  add mapb
+*/
+
 import (
 	"bufio"
 	"fmt"
 	"os"
 	"strings"
+  "pokedexcli/pokeAPI"
 )
 
 func cleanInput(text string) []string {
@@ -21,6 +28,7 @@ type cliCommand struct {
 	name        string
 	description string
 	callback    func(*config) error
+  config      config
 }
 
 func commandExit(cp *config) error {
@@ -40,7 +48,28 @@ func commandHelp(cp *config) error {
 }
 
 func commandMap(cp *config) error {
+  fmt.Printf("runing link: %v\n", cp.next)
+  got := pokeAPI.GetLocationArea(cp.next)
+  results := got.Results
+  //pokeAPI.EnumeratedResp
 
+  fmt.Printf("next: %v\n", cp.next)
+  fmt.Printf("previous: %v\n", cp.previous)
+
+  if got.Next != nil {
+    cp.next = *got.Next
+  }
+  if got.Previous != nil {
+    cp.previous = *got.Previous
+  }
+
+  fmt.Printf("next: %v\n", cp.next)
+  fmt.Printf("previous: %v\n", cp.previous)
+  
+  for i := 0; i < len(results); i++ {
+    fmt.Println( results[i].Name )
+  }
+  return nil
 }
 
 func get_commands() map[string]cliCommand {
@@ -59,6 +88,10 @@ func get_commands() map[string]cliCommand {
 			name:        "map",
 			description: "Displays name of 20 locations in the Pokemon world. Each subsequent call displays the next 20 locations.",
 			callback:    commandMap,
+      config:   config{
+            next: "https://pokeapi.co/api/v2/location-area/",
+            previous: "",
+        },
 		},
 	}
 }
@@ -83,7 +116,13 @@ func main() {
 			continue
 		}
 
-		err := command.callback()
+    fmt.Println(command.config)
+		err := command.callback(&command.config)
+
+    fmt.Printf("out next: %v\n", command.config.next)
+    fmt.Printf("out previous: %v\n", command.config.previous)
+    commands[input[0]] = command
+
 		if err != nil {
 			fmt.Errorf("Error from given command: %w\n", err)
 		}
