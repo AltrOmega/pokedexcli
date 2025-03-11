@@ -1,13 +1,12 @@
 package pokeAPI
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
-  "encoding/json"
 )
-
 
 // https://pokeapi.co/api/v2/location-area/
 
@@ -23,12 +22,11 @@ type NameAndUrl struct {
 	URL  string `json:"url"`
 }
 
-
-//change log fatals to a err return
-func getJsAsBytes(link string) []byte{
+// change log fatals to a err return
+func getJsAsBytes(link string) ([]byte, error) {
 	res, err := http.Get(link)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 	body, err := io.ReadAll(res.Body)
 	res.Body.Close()
@@ -36,23 +34,33 @@ func getJsAsBytes(link string) []byte{
 		log.Fatalf("Response failed with status code: %d and\nbody: %s\n", res.StatusCode, body)
 	}
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
-  return body
+	return body, nil
 }
 
-func parseLocationAreaJson(bytes []byte) EnumeratedResp {
-  resp := EnumeratedResp{}
-  err := json.Unmarshal(bytes, &resp)
-  if err != nil {
-    fmt.Println(err) 
-  }
-    return resp
+func parseLocationAreaJson(bytes []byte) (EnumeratedResp, error) {
+	resp := EnumeratedResp{}
+	err := json.Unmarshal(bytes, &resp)
+	if err != nil {
+		fmt.Println(err)
+		return EnumeratedResp{}, err
+	}
+	return resp, nil
 }
 
+func GetLocationArea(link string) (EnumeratedResp, error) {
+	jsBytes, err := getJsAsBytes(link)
+	if err != nil {
+		fmt.Println(err)
+		return EnumeratedResp{}, err
+	}
 
-func GetLocationArea(link string) EnumeratedResp{
-  jsBytes := getJsAsBytes(link)
-  enumResp := parseLocationAreaJson(jsBytes)
-  return enumResp
+	enumResp, err := parseLocationAreaJson(jsBytes)
+	if err != nil {
+		fmt.Println(err)
+		return EnumeratedResp{}, err
+	}
+
+	return enumResp, nil
 }
