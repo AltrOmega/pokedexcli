@@ -6,6 +6,8 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"pokedexcli/pokecache"
+	"time"
 )
 
 // https://pokeapi.co/api/v2/location-area/
@@ -22,8 +24,19 @@ type NameAndUrl struct {
 	URL  string `json:"url"`
 }
 
-// change log fatals to a err return
+var pcache *pokecache.Cache
+
 func getJsAsBytes(link string) ([]byte, error) {
+	// kinda meh solution would be better to check it only once
+	// and not on every get call
+	if pcache == nil {
+		pcache = pokecache.NewCache(time.Second * 5)
+	}
+	val, ok := pcache.Get(link)
+	if ok {
+		return val, nil
+	}
+
 	res, err := http.Get(link)
 	if err != nil {
 		return nil, err
@@ -36,6 +49,7 @@ func getJsAsBytes(link string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	pcache.Add(link, body)
 	return body, nil
 }
 

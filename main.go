@@ -1,11 +1,5 @@
 package main
 
-/*
-Todo:
-  clean up the code and move some thing to a new package
-  add mapb
-*/
-
 import (
 	"bufio"
 	"errors"
@@ -51,7 +45,6 @@ func commandHelp(cp *config, args []string) error {
 	return nil
 }
 
-// does not update cp properly
 func generalMap(cp *config, goto_link string) error {
 	if goto_link == "" {
 		fmt.Println("End of the line.")
