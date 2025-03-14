@@ -6,9 +6,8 @@ import (
 	"time"
 )
 
-// Todo: fix broken packageing
 func TestCaching(t *testing.T) {
-	const interval = time.Second * 1
+	const interval = time.Millisecond * 100
 
 	cases := []struct {
 		key string
@@ -21,6 +20,18 @@ func TestCaching(t *testing.T) {
 		{
 			key: "https://example.com/path",
 			val: []byte("moretestdata"),
+		},
+		{
+			key: "https://gogiel.com",
+			val: []byte("evenmoretestdata"),
+		},
+		{
+			key: "https://twitor.com/something",
+			val: []byte("among us <- funny btw if it wasnt clear"),
+		},
+		{
+			key: "https://www.youtube.com/watch?v=H9aC5AGY9YU",
+			val: []byte("juan."),
 		},
 	}
 
@@ -35,6 +46,13 @@ func TestCaching(t *testing.T) {
 			}
 			if string(val) != string(c.val) {
 				t.Errorf("expected to find value")
+				return
+			}
+
+			time.Sleep(interval)
+			_, ok = cache.Get(c.key)
+			if ok {
+				t.Errorf("expected to NOT find key")
 				return
 			}
 		})

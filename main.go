@@ -37,7 +37,8 @@ func commandExit(cp *config, args []string) error {
 
 func commandHelp(cp *config, args []string) error {
 	fmt.Println("Welcome to the Pokedex!")
-	fmt.Println("Usage:\n")
+	fmt.Println("Usage:")
+	fmt.Println("")
 	commands := get_commands()
 	for _, value := range commands {
 		fmt.Printf("%v: %v\n", value.name, value.description)
