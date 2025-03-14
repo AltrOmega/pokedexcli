@@ -37,6 +37,10 @@ func getJsAsBytes(link string) ([]byte, error) {
 	return body, nil
 }
 
+func GetLink(endpoint, destination string) string {
+	return fmt.Sprintf("%v%v", endpoint, destination)
+}
+
 func parseJson[T any](bytes []byte) (T, error) {
 	var resp T
 	err := json.Unmarshal(bytes, &resp)

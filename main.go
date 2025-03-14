@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
+	"math/rand"
 	"os"
 	"os/exec"
 	"pokedexcli/pokeAPI"
@@ -126,7 +127,7 @@ func commandExplore(cp *config, args []string) error {
 	if len(args) < 1 {
 		return errors.New("Not enough arguments.")
 	}
-	link := fmt.Sprintf("%v%v", pokeAPI.AreaEndpoint, args[0])
+	link := pokeAPI.GetLink(pokeAPI.AreaEndpoint, args[0])
 
 	locationData, err := pokeAPI.GetResp[pokeAPI.LocationData](link)
 	if err != nil {
@@ -135,16 +136,82 @@ func commandExplore(cp *config, args []string) error {
 
 	len_ := len(locationData.PokemonEncounters)
 	for i := range len_ {
-		name := locationData.PokemonEncounters[i].Pokemon.Name
+		name := locationData.PokemonEncounters[i].PokemonNUrl.Name
 		fmt.Println(name)
 	}
 
 	return nil
 }
 
+func commandInspect(cp *config, args []string) error {
+	if len(args) < 1 {
+		return errors.New("Not enough arguments.")
+	}
+
+	pokemon, ok := ownedPokemon[args[0]]
+	if !ok {
+		fmt.Println("you have not caught that pokemon")
+		return nil
+	}
+
+	fmt.Printf("Height: %v\n", pokemon.Height)
+	fmt.Printf("Weight: %v\n", pokemon.Weight)
+	fmt.Println("Stats:")
+	for _, stat := range pokemon.Stats {
+		fmt.Printf(" -%v: %v\n", stat.StatNUrl.Name, stat.BaseStat)
+	}
+	fmt.Println("Types:")
+	for _, type_ := range pokemon.Types {
+		fmt.Printf(" - %v\n", type_.TypeNUrl.Name)
+	}
+	return nil
+}
+
+func commandCatch(cp *config, args []string) error {
+	if len(args) < 1 {
+		return errors.New("Not enough arguments.")
+	}
+	link := pokeAPI.GetLink(pokeAPI.PokemonEndpoint, args[0])
+
+	pokemonData, err := pokeAPI.GetResp[pokeAPI.Pokemon](link)
+	if err != nil {
+		return err
+	}
+	pname := pokemonData.Name
+	fmt.Printf("Throwing a Pokeball at %v...\n", pname)
+	// 30% chance to fail
+	if rand.Intn(10) < 3 {
+		fmt.Printf("%v escaped!\n", pname)
+		return nil
+	}
+
+	if ownedPokemon == nil {
+		ownedPokemon = make(map[string]pokeAPI.Pokemon)
+	}
+
+	ownedPokemon[pname] = pokemonData
+	fmt.Printf("%v was caught!\n", pname)
+	fmt.Println("You may now inspect it with the inspect command.")
+	return nil
+}
+
+func commandPokedex(cp *config, args []string) error {
+	fmt.Println("Your Pokedex:")
+	if ownedPokemon == nil {
+		fmt.Println("Is empty!")
+		fmt.Println("Gota catch 'em all!")
+	}
+	for _, pokemon := range ownedPokemon {
+		fmt.Printf(" - %v\n", pokemon.Name)
+	}
+	return nil
+}
+
 var (
 	commandsMap      *map[string]cliCommand
 	commandsAreSetup sync.Once
+	// Todo: move ownedPokemon to config
+	ownedPokemon map[string]pokeAPI.Pokemon
 )
 
 func get_commands() map[string]cliCommand {
@@ -190,6 +257,21 @@ func get_commands() map[string]cliCommand {
 				name:        "clear",
 				description: "Clears the termial",
 				callback:    commandClear,
+			},
+			"catch": {
+				name:        "catch",
+				description: "Catches a pokemon by name",
+				callback:    commandCatch,
+			},
+			"pokedex": {
+				name:        "pokedex",
+				description: "Shows pokemon you own",
+				callback:    commandPokedex,
+			},
+			"inspect": {
+				name:        "inspect",
+				description: "inspect a pokemon you own by name",
+				callback:    commandInspect,
 			},
 		}
 	})
