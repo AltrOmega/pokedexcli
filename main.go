@@ -51,13 +51,12 @@ func generalMap(cp *config, goto_link string) error {
 		fmt.Println("End of the line.")
 		return nil
 	}
-	got, err := pokeAPI.GetLocationArea(goto_link)
+	got, err := pokeAPI.GetResp[pokeAPI.EnumeratedResp](goto_link)
 	if err != nil {
 		fmt.Println(err)
 		return err
 	}
 	results := got.Results
-	//pokeAPI.EnumeratedResp
 
 	if got.Next != nil {
 		cp.next = *got.Next
@@ -123,6 +122,26 @@ func commandClear(cp *config, args []string) error {
 	return clearScreen()
 }
 
+func commandExplore(cp *config, args []string) error {
+	if len(args) < 1 {
+		return errors.New("Not enough arguments.")
+	}
+	link := fmt.Sprintf("%v%v", pokeAPI.AreaEndpoint, args[0])
+
+	locationData, err := pokeAPI.GetResp[pokeAPI.LocationData](link)
+	if err != nil {
+		return err
+	}
+
+	len_ := len(locationData.PokemonEncounters)
+	for i := range len_ {
+		name := locationData.PokemonEncounters[i].Pokemon.Name
+		fmt.Println(name)
+	}
+
+	return nil
+}
+
 var (
 	commandsMap      *map[string]cliCommand
 	commandsAreSetup sync.Once
@@ -131,7 +150,7 @@ var (
 func get_commands() map[string]cliCommand {
 	commandsAreSetup.Do(func() {
 		mapConfigPointer := &config{
-			next:     "https://pokeapi.co/api/v2/location-area/",
+			next:     pokeAPI.AreaEndpoint,
 			previous: "",
 		}
 		commandsMap = &map[string]cliCommand{
@@ -157,14 +176,19 @@ func get_commands() map[string]cliCommand {
 				callback:    commandMapb,
 				config:      mapConfigPointer,
 			},
+			"explore": {
+				name:        "explore",
+				description: "Lets you explore given area of the map",
+				callback:    commandExplore,
+			},
 			"config": {
 				name:        "config",
-				description: "shows configuration for a given command",
+				description: "Shows configuration for a given command",
 				callback:    commandConfig,
 			},
 			"clear": {
 				name:        "clear",
-				description: "clears the termial",
+				description: "Clears the termial",
 				callback:    commandClear,
 			},
 		}
@@ -199,6 +223,5 @@ func main() {
 		if err != nil {
 			fmt.Printf("Error from given command: %v\n", err)
 		}
-		//fmt.Println("---\n")
 	}
 }

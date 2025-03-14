@@ -10,27 +10,11 @@ import (
 	"time"
 )
 
-// https://pokeapi.co/api/v2/location-area/
-
-type EnumeratedResp struct {
-	Count    int          `json:"count"`
-	Next     *string      `json:"next"`
-	Previous *string      `json:"previous"`
-	Results  []NameAndUrl `json:"results"`
-}
-
-type NameAndUrl struct {
-	Name string `json:"name"`
-	URL  string `json:"url"`
-}
-
 var pcache *pokecache.Cache
 
 func getJsAsBytes(link string) ([]byte, error) {
-	// kinda meh solution would be better to check it only once
-	// and not on every get call
 	if pcache == nil {
-		pcache = pokecache.NewCache(time.Second * 5)
+		pcache = pokecache.NewCache(time.Second * 60)
 	}
 	val, ok := pcache.Get(link)
 	if ok {
@@ -53,28 +37,28 @@ func getJsAsBytes(link string) ([]byte, error) {
 	return body, nil
 }
 
-func parseLocationAreaJson(bytes []byte) (EnumeratedResp, error) {
-	resp := EnumeratedResp{}
+func parseJson[T any](bytes []byte) (T, error) {
+	var resp T
 	err := json.Unmarshal(bytes, &resp)
 	if err != nil {
-		fmt.Println(err)
-		return EnumeratedResp{}, err
+		return resp, err
 	}
 	return resp, nil
 }
 
-func GetLocationArea(link string) (EnumeratedResp, error) {
+func GetResp[T any](link string) (T, error) {
+	var resp T
 	jsBytes, err := getJsAsBytes(link)
 	if err != nil {
 		fmt.Println(err)
-		return EnumeratedResp{}, err
+		return resp, err
 	}
 
-	enumResp, err := parseLocationAreaJson(jsBytes)
+	resp, err = parseJson[T](jsBytes)
 	if err != nil {
 		fmt.Println(err)
-		return EnumeratedResp{}, err
+		return resp, err
 	}
 
-	return enumResp, nil
+	return resp, nil
 }
